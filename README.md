@@ -202,3 +202,19 @@ TP（計略點）每月回復：`30 + 智略最高武將/10`
 - 戰爭做「可讀可算」：玩家要知道為何贏、為何輸。
 - 武將做「有臉譜」：同兵力換將，體感要不同。
 - 優先平衡：兵種相剋 > 陣型博弈 > 戰法強度。
+
+---
+
+## 8) 程式原型（本 repo 已實作）
+
+目前已提供可執行的戰鬥核心原型程式：
+- `src/battle_engine.py`：傷害公式、兵種相剋、地形、士氣、戰法成功率
+- `src/main.py`：單場示範輸出
+- `tests/test_battle_engine.py`：核心規則單元測試
+
+執行方式：
+
+```bash
+python3 src/main.py
+python3 -m unittest discover -s tests -p 'test_*.py'
+```
