@@ -215,6 +215,12 @@ TP（計略點）每月回復：`30 + 智略最高武將/10`
 執行方式：
 
 ```bash
-python3 src/main.py
+python3 -m src.main --mode demo
+python3 -m src.main --mode interactive --max-rounds 8 --seed 7
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
+
+手動測試建議流程：
+1. 先用 `--mode demo` 檢查環境可執行。
+2. 再用 `--mode interactive`，連續測幾局不同陣型/地形，觀察兵力、士氣與勝負是否符合預期。
+3. 若要重現問題，固定 `--seed` 後回報戰報文字即可重播。

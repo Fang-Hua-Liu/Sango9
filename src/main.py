@@ -1,46 +1,76 @@
-from battle_engine import (
-    Arms,
-    BattleContext,
-    Formation,
-    Officer,
-    Terrain,
-    Unit,
-    simulate_skirmish,
-    tactic_success_rate,
-)
+from __future__ import annotations
+
+import argparse
+
+from src.battle_engine import Formation, Terrain
+from src.game import GameConfig, is_finished, run_round, starter_state, winner
 
 
-def demo() -> None:
-    zhao_yun = Officer(name="趙雲", leadership=92, might=94, intelligence=76)
-    yan_liang = Officer(name="顏良", leadership=83, might=90, intelligence=58)
+def parse_formation(raw: str) -> Formation:
+    return Formation(raw)
 
-    attacker = Unit(
-        officer=zhao_yun,
-        troops=5000,
-        arms=Arms.CAVALRY,
-        formation=Formation.FENGSHI,
-        morale=88,
-    )
-    defender = Unit(
-        officer=yan_liang,
-        troops=5300,
-        arms=Arms.BOW,
-        formation=Formation.FANGYUAN,
-        morale=74,
-    )
 
-    ctx = BattleContext(terrain=Terrain.PLAIN, is_siege_target=False, random_factor=1.0)
-    result = simulate_skirmish(attacker, defender, ctx)
-    rate = tactic_success_rate(zhao_yun.intelligence, yan_liang.intelligence)
+def parse_terrain(raw: str) -> Terrain:
+    return Terrain(raw)
 
-    print(f"{attacker.officer.name} 對 {defender.officer.name} 造成傷害: {result.attacker_damage}")
-    print(f"{defender.officer.name} 反擊造成傷害: {result.defender_damage}")
-    print(
-        f"戰後兵力: {attacker.officer.name}={result.attacker_after.troops}, "
-        f"{defender.officer.name}={result.defender_after.troops}"
-    )
-    print(f"戰法成功率(趙雲->顏良): {rate:.1f}%")
+
+def run_demo() -> None:
+    state = starter_state(seed=7)
+    for formation, terrain in [
+        (Formation.FENGSHI, Terrain.PLAIN),
+        (Formation.YULIN, Terrain.FOREST),
+        (Formation.FANGYUAN, Terrain.MOUNTAIN),
+    ]:
+        run_round(state, formation, terrain, random_factor=1.0)
+    for line in state.log:
+        print(line)
+    print(f"勝者: {winner(state)}")
+
+
+def run_interactive(config: GameConfig) -> None:
+    state = starter_state(seed=config.random_seed)
+    print("=== 三國戰鬥手動測試版 ===")
+    print("可輸入陣型: yulin/fengshi/fangyuan/heyi/changshe")
+    print("可輸入地形: plain/mountain/forest")
+
+    while not is_finished(state, config.max_rounds):
+        print(
+            f"\nRound {state.round_no} | 我方兵力={state.player.troops} 士氣={state.player.morale} "
+            f"vs 敵方兵力={state.enemy.troops} 士氣={state.enemy.morale}"
+        )
+        formation_raw = input("選擇陣型 > ").strip().lower()
+        terrain_raw = input("選擇地形 > ").strip().lower()
+
+        try:
+            formation = parse_formation(formation_raw)
+            terrain = parse_terrain(terrain_raw)
+        except ValueError:
+            print("輸入錯誤，請重試。")
+            continue
+
+        run_round(state, formation, terrain)
+        print(state.log[-1])
+
+    print("\n=== 對局結束 ===")
+    print(f"勝者: {winner(state)}")
+    print("戰報:")
+    for line in state.log:
+        print(f"- {line}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="戰爭核心手動測試程式")
+    parser.add_argument("--mode", choices=["demo", "interactive"], default="demo")
+    parser.add_argument("--max-rounds", type=int, default=12)
+    parser.add_argument("--seed", type=int, default=None)
+    args = parser.parse_args()
+
+    if args.mode == "demo":
+        run_demo()
+        return
+
+    run_interactive(GameConfig(max_rounds=args.max_rounds, random_seed=args.seed))
 
 
 if __name__ == "__main__":
-    demo()
+    main()
