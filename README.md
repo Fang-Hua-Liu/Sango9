@@ -207,20 +207,24 @@ TP（計略點）每月回復：`30 + 智略最高武將/10`
 
 ## 8) 程式原型（本 repo 已實作）
 
-目前已提供可執行的戰鬥核心原型程式：
+目前已提供可執行的戰鬥核心與手動測試程式：
 - `src/battle_engine.py`：傷害公式、兵種/陣型相剋、地形、士氣、回合交戰模擬、戰法成功率
-- `src/main.py`：單回合交戰示範輸出（雙方互擊後兵力/士氣變化）
-- `tests/test_battle_engine.py`：核心規則單元測試
+- `src/game.py`：對局狀態管理、勝負判定、內政（徵兵/屯糧/募資/安民）
+- `src/gui.py`：Tkinter 圖形化介面（可手動選陣型、地形、內政並跑回合）
+- `src/main.py`：CLI 入口（demo / interactive / gui）
+- `tests/`：pytest 測試（戰鬥核心、流程、內政、輸入解析）
 
 執行方式：
 
 ```bash
 python3 -m src.main --mode demo
 python3 -m src.main --mode interactive --max-rounds 8 --seed 7
-python3 -m unittest discover -s tests -p 'test_*.py'
+python3 -m src.main --mode gui --max-rounds 8 --seed 7
+pytest --cov=src --cov-report=term-missing
 ```
 
 手動測試建議流程：
 1. 先用 `--mode demo` 檢查環境可執行。
-2. 再用 `--mode interactive`，連續測幾局不同陣型/地形，觀察兵力、士氣與勝負是否符合預期。
+2. 再用 `--mode gui` 進行圖形化手動測試（陣型、地形、內政）。
 3. 若要重現問題，固定 `--seed` 後回報戰報文字即可重播。
+

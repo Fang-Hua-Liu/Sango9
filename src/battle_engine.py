@@ -1,9 +1,8 @@
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass, replace
 from enum import Enum
-from typing import Optional
-import random
 
 
 class Arms(str, Enum):
@@ -50,7 +49,7 @@ class BattleContext:
     terrain: Terrain
     attacking_city: bool = False
     is_siege_target: bool = False
-    random_factor: Optional[float] = None
+    random_factor: float | None = None
 
 
 @dataclass(frozen=True)
