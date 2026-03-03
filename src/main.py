@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 
 from src.battle_engine import Formation, Terrain
+from src.campaign import CampaignSession, config_from_game
 from src.game import (
     GameConfig,
     InternalAffairsAction,
@@ -89,14 +90,57 @@ def run_interactive(config: GameConfig) -> None:
         print(f"- {line}")
 
 
+def run_campaign(config: GameConfig) -> None:
+    session = CampaignSession(config=config_from_game(config))
+    print("=== 三國戰役模式 ===")
+    print(f"月份上限: {config.max_months} | 每月旬數: {config.rounds_per_month}")
+    print("每回合流程: 內政 -> 戰鬥")
+
+    while not session.is_finished():
+        current_round = session.state.round_no
+        month = ((current_round - 1) // config.rounds_per_month) + 1
+        turn_in_month = ((current_round - 1) % config.rounds_per_month) + 1
+
+        print(
+            f"\nMonth {month}, Turn {turn_in_month} | "
+            f"我方兵力={session.state.player.troops} vs 敵方兵力={session.state.enemy.troops}"
+        )
+
+        affair = parse_affair(input("內政(recruit/farm/fund/order) > ").strip().lower())
+        formation = parse_formation(
+            input("陣型(yulin/fengshi/fangyuan/heyi/changshe) > ").strip().lower()
+        )
+        terrain = parse_terrain(input("地形(plain/mountain/forest) > ").strip().lower())
+
+        turn_result = session.play_turn(
+            affair_action=affair,
+            player_formation=formation,
+            terrain=terrain,
+        )
+        print(turn_result.affair_message)
+        print(turn_result.battle_message)
+
+    print("\n=== 戰役結束 ===")
+    print(f"勝者: {session.champion()}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="戰爭核心手動測試程式")
-    parser.add_argument("--mode", choices=["demo", "interactive", "gui"], default="demo")
+    parser.add_argument(
+        "--mode", choices=["demo", "interactive", "gui", "campaign"], default="demo"
+    )
     parser.add_argument("--max-rounds", type=int, default=12)
+    parser.add_argument("--max-months", type=int, default=8)
+    parser.add_argument("--rounds-per-month", type=int, default=3)
     parser.add_argument("--seed", type=int, default=None)
     args = parser.parse_args()
 
-    config = GameConfig(max_rounds=args.max_rounds, random_seed=args.seed)
+    config = GameConfig(
+        max_rounds=args.max_rounds,
+        max_months=args.max_months,
+        rounds_per_month=args.rounds_per_month,
+        random_seed=args.seed,
+    )
 
     if args.mode == "demo":
         run_demo()
@@ -104,6 +148,10 @@ def main() -> None:
 
     if args.mode == "interactive":
         run_interactive(config)
+        return
+
+    if args.mode == "campaign":
+        run_campaign(config)
         return
 
     run_gui(config)

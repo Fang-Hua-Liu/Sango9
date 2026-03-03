@@ -38,6 +38,8 @@ class InternalAffairsAction(str, Enum):
 @dataclass(frozen=True)
 class GameConfig:
     max_rounds: int = 12
+    max_months: int = 8
+    rounds_per_month: int = 3
     random_seed: int | None = None
 
 
