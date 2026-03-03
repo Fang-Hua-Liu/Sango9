@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from typing import Optional
 import random
@@ -21,10 +21,10 @@ class Terrain(str, Enum):
 
 
 class Formation(str, Enum):
-    YULIN = "yulin"      # 魚鱗
+    YULIN = "yulin"  # 魚鱗
     FENGSHI = "fengshi"  # 鋒矢
     FANGYUAN = "fangyuan"  # 方圓
-    HEYI = "heyi"        # 鶴翼
+    HEYI = "heyi"  # 鶴翼
     CHANGSHE = "changshe"  # 長蛇
 
 
@@ -53,6 +53,14 @@ class BattleContext:
     random_factor: Optional[float] = None
 
 
+@dataclass(frozen=True)
+class SkirmishResult:
+    attacker_after: Unit
+    defender_after: Unit
+    attacker_damage: int
+    defender_damage: int
+
+
 ARM_COUNTER = {
     (Arms.SPEAR, Arms.CAVALRY): 1.2,
     (Arms.CAVALRY, Arms.BOW): 1.2,
@@ -65,6 +73,14 @@ FORMATION_ATTACK_MOD = {
     Formation.FANGYUAN: 0.92,
     Formation.HEYI: 1.03,
     Formation.CHANGSHE: 1.0,
+}
+
+FORMATION_COUNTER = {
+    (Formation.FENGSHI, Formation.FANGYUAN): 1.12,
+    (Formation.FANGYUAN, Formation.HEYI): 1.12,
+    (Formation.HEYI, Formation.YULIN): 1.12,
+    (Formation.YULIN, Formation.CHANGSHE): 1.12,
+    (Formation.CHANGSHE, Formation.FENGSHI): 1.12,
 }
 
 
@@ -83,6 +99,18 @@ def arms_multiplier(attacker: Arms, defender: Arms, is_siege_target: bool) -> fl
     reverse = ARM_COUNTER.get((defender, attacker))
     if reverse:
         return 0.85
+
+    return 1.0
+
+
+def formation_multiplier(attacker: Formation, defender: Formation) -> float:
+    direct = FORMATION_COUNTER.get((attacker, defender))
+    if direct:
+        return direct
+
+    reverse = FORMATION_COUNTER.get((defender, attacker))
+    if reverse:
+        return 0.9
 
     return 1.0
 
@@ -111,7 +139,8 @@ def calculate_damage(attacker: Unit, defender: Unit, context: BattleContext) -> 
     base = attack_base(attacker.officer.leadership, attacker.officer.might)
     troop_factor = max(attacker.troops, 1) / 1000.0
     arm_mod = arms_multiplier(attacker.arms, defender.arms, context.is_siege_target)
-    formation_mod = FORMATION_ATTACK_MOD[attacker.formation]
+    formation_attack_mod = FORMATION_ATTACK_MOD[attacker.formation]
+    formation_counter_mod = formation_multiplier(attacker.formation, defender.formation)
     terrain_mod = terrain_multiplier(attacker.arms, context.terrain)
     morale_mod = morale_multiplier(attacker.morale)
 
@@ -120,8 +149,39 @@ def calculate_damage(attacker: Unit, defender: Unit, context: BattleContext) -> 
     else:
         rand = clamp(context.random_factor, 0.9, 1.1)
 
-    damage = base * troop_factor * arm_mod * formation_mod * terrain_mod * morale_mod * rand
+    damage = (
+        base
+        * troop_factor
+        * arm_mod
+        * formation_attack_mod
+        * formation_counter_mod
+        * terrain_mod
+        * morale_mod
+        * rand
+    )
     return max(int(round(damage)), 1)
+
+
+def apply_damage(unit: Unit, damage: int) -> Unit:
+    remaining = max(unit.troops - max(damage, 0), 0)
+    morale_drop = min(30, max(1, damage // 250))
+    next_morale = int(clamp(unit.morale - morale_drop, 0, 100))
+    return replace(unit, troops=remaining, morale=next_morale)
+
+
+def simulate_skirmish(attacker: Unit, defender: Unit, context: BattleContext) -> SkirmishResult:
+    attacker_damage = calculate_damage(attacker, defender, context)
+    defender_damage = calculate_damage(defender, attacker, context)
+
+    defender_after = apply_damage(defender, attacker_damage)
+    attacker_after = apply_damage(attacker, defender_damage)
+
+    return SkirmishResult(
+        attacker_after=attacker_after,
+        defender_after=defender_after,
+        attacker_damage=attacker_damage,
+        defender_damage=defender_damage,
+    )
 
 
 def tactic_success_rate(caster_int: int, target_int: int) -> float:
