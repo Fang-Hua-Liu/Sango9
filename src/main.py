@@ -14,6 +14,7 @@ from src.game import (
     winner,
 )
 from src.gui import run_gui
+from src.web_app import create_app
 
 
 def parse_formation(raw: str) -> Formation:
@@ -124,10 +125,19 @@ def run_campaign(config: GameConfig) -> None:
     print(f"勝者: {session.champion()}")
 
 
+def run_web(config: GameConfig) -> None:
+    app = create_app(
+        max_months=config.max_months,
+        rounds_per_month=config.rounds_per_month,
+        seed=config.random_seed,
+    )
+    app.run(host="0.0.0.0", port=8000, debug=False)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="戰爭核心手動測試程式")
     parser.add_argument(
-        "--mode", choices=["demo", "interactive", "gui", "campaign"], default="demo"
+        "--mode", choices=["demo", "interactive", "gui", "campaign", "web"], default="demo"
     )
     parser.add_argument("--max-rounds", type=int, default=12)
     parser.add_argument("--max-months", type=int, default=8)
@@ -152,6 +162,10 @@ def main() -> None:
 
     if args.mode == "campaign":
         run_campaign(config)
+        return
+
+    if args.mode == "web":
+        run_web(config)
         return
 
     run_gui(config)

@@ -211,6 +211,7 @@ TP（計略點）每月回復：`30 + 智略最高武將/10`
 - `src/battle_engine.py`：傷害公式、兵種/陣型相剋、地形、士氣、回合交戰模擬、戰法成功率
 - `src/game.py`：對局狀態管理、勝負判定、內政（徵兵/屯糧/募資/安民）
 - `src/campaign.py`：戰役模式（每回合固定 內政→戰鬥，含月份/旬數結束條件）
+- `src/web_app.py`：Flask 網頁版戰役介面（手動選擇內政/陣型/地形）
 - `src/gui.py`：Tkinter 圖形化介面（可手動選陣型、地形、內政並跑回合）
 - `src/main.py`：CLI 入口（demo / interactive / gui）
 - `tests/`：pytest 測試（戰鬥核心、流程、內政、輸入解析）
@@ -222,6 +223,7 @@ python3 -m src.main --mode demo
 python3 -m src.main --mode interactive --max-rounds 8 --seed 7
 python3 -m src.main --mode gui --max-rounds 8 --seed 7
 python3 -m src.main --mode campaign --max-months 8 --rounds-per-month 3 --seed 7
+python3 -m src.main --mode web --max-months 8 --rounds-per-month 3 --seed 7
 pytest --cov=src --cov-report=term-missing
 ```
 
