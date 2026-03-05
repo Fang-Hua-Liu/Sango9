@@ -136,6 +136,9 @@ def attack_base(leadership: int, might: int) -> float:
 
 
 def calculate_damage(attacker: Unit, defender: Unit, context: BattleContext) -> int:
+    if attacker.troops <= 0:
+        return 0
+
     base = attack_base(attacker.officer.leadership, attacker.officer.might)
     troop_factor = max(attacker.troops, 1) / 1000.0
     arm_mod = arms_multiplier(attacker.arms, defender.arms, context.is_siege_target)
@@ -163,6 +166,9 @@ def calculate_damage(attacker: Unit, defender: Unit, context: BattleContext) -> 
 
 
 def apply_damage(unit: Unit, damage: int) -> Unit:
+    if damage <= 0:
+        return unit
+
     remaining = max(unit.troops - max(damage, 0), 0)
     morale_drop = min(30, max(1, damage // 250))
     next_morale = int(clamp(unit.morale - morale_drop, 0, 100))

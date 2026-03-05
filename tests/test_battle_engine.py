@@ -47,6 +47,13 @@ class BattleEngineTests(unittest.TestCase):
         self.assertEqual(dmg_1, dmg_2)
         self.assertGreater(dmg_1, 0)
 
+    def test_zero_troops_unit_deals_zero_damage(self):
+        attacker = self._unit(Arms.SPEAR, Formation.YULIN, troops=0)
+        defender = Unit(self.defender_officer, troops=4200, arms=Arms.BOW, formation=Formation.FANGYUAN, morale=75)
+        ctx = BattleContext(terrain=Terrain.PLAIN, random_factor=1.0)
+
+        self.assertEqual(calculate_damage(attacker, defender, ctx), 0)
+
     def test_apply_damage_updates_troops_and_morale(self):
         unit = self._unit(Arms.SPEAR, Formation.YULIN, morale=90, troops=3000)
         after = apply_damage(unit, 500)
